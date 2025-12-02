@@ -1,0 +1,23 @@
+[package]
+name = "kovi-plugin-meme"
+version = "0.1.0"
+edition = "2024"
+
+description = "kovi meme plugin"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+homepage = "https://github.com/yiranxiaohui/kovi-plugin-meme"
+repository = "https://github.com/yiranxiaohui/kovi-plugin-meme"
+documentation = "https://docs.rs/kovi-plugin-meme"
+
+[dependencies]
+kovi = ">=0.12.5"
+meme_generator = "0.2.2"
+infer = "0.19.0"
+uuid = { version = "1.18.1", features = ["v4"] }
+reqwest = { version = "0.12.24", features = ["default", "json", "rustls-tls"] }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.145"
+base64 = "0.22.1"
+indicatif = "0.18.3"
+console = "0.16.1"
