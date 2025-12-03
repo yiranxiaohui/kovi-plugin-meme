@@ -1,5 +1,5 @@
 use meme_generator::error::Error;
-use meme_generator::meme::Image;
+use meme_generator::meme::{Image, OptionValue};
 use meme_generator::get_meme;
 use std::collections::HashMap;
 use std::env;
@@ -26,31 +26,54 @@ async fn main() {
     plugin::on_msg(move |event| {
         async move {
             let text = event.borrow_text().unwrap_or("");
-            if text.starts_with("/摸摸头") {
-                let mut qq_number= String::new();
-                for segment in event.message.iter() {
-                    debug!("segment = {:?}", segment);
-                    if segment.type_ == "at" {
-                        if let Some(qq) = segment.data.get("qq").and_then(|v| v.as_str()) {
-                            qq_number = qq.to_string();
-                        }
-                    }
-                }
-                if qq_number.is_empty() {
-                    return
-                }
-                let avatar = get_qq_avatar(qq_number.clone()).await;
-                let key = "petpet";
-                let meme = get_meme(key).expect(format!("表情 `{key}` 不存在").as_str());
-                let images= vec![{
-                    let data = read(avatar).unwrap();
-                    let name = format!("{}.jpg", qq_number);
-                    Image {name, data}
-                }];
-                let texts = vec![];
-                let options = HashMap::new();
-                let result = meme.generate(images, texts, options);
-                let avatar = handle_result(result).await;
+            let qq_number = get_qq_number(event.message.clone()).await;
+            let mut options = HashMap::new();
+            if text.starts_with("摸摸头") {
+                let avatar = generate_image("petpet", qq_number, options).await;
+                // 将 path 转为当前系统格式后的字符串
+                let msg = Message::new()
+                    .add_image(avatar.as_str());
+                event.reply(msg);
+            } else if text.starts_with("捶爆") || text.starts_with("爆捶") {
+                let avatar = generate_image("thump_wildly", qq_number, options).await;
+                // 将 path 转为当前系统格式后的字符串
+                let msg = Message::new()
+                    .add_image(avatar.as_str());
+                event.reply(msg);
+            } else if text.starts_with("戒导") {
+                let avatar = generate_image("abstinence", qq_number, options).await;
+                // 将 path 转为当前系统格式后的字符串
+                let msg = Message::new()
+                    .add_image(avatar.as_str());
+                event.reply(msg);
+            } else if text.starts_with("小丑面具") {
+                options.insert(String::from("behind"), OptionValue::Boolean(true));
+                let avatar = generate_image("clown_mask", qq_number, options).await;
+                // 将 path 转为当前系统格式后的字符串
+                let msg = Message::new()
+                    .add_image(avatar.as_str());
+                event.reply(msg);
+            } else if text.starts_with("小丑") {
+                let avatar = generate_image("clown", qq_number, options).await;
+                // 将 path 转为当前系统格式后的字符串
+                let msg = Message::new()
+                    .add_image(avatar.as_str());
+                event.reply(msg);
+            } else if text.starts_with("手枪") {
+                let avatar = generate_image("gun", qq_number, options).await;
+                // 将 path 转为当前系统格式后的字符串
+                let msg = Message::new()
+                    .add_image(avatar.as_str());
+                event.reply(msg);
+            } else if text.starts_with("上香") {
+                options.insert(String::from("gray"), OptionValue::Boolean(true));
+                let avatar = generate_image("mourning", qq_number, options).await;
+                // 将 path 转为当前系统格式后的字符串
+                let msg = Message::new()
+                    .add_image(avatar.as_str());
+                event.reply(msg);
+            } else if text.starts_with("催眠app") {
+                let avatar = generate_image("saimin_app", qq_number, options).await;
                 // 将 path 转为当前系统格式后的字符串
                 let msg = Message::new()
                     .add_image(avatar.as_str());
@@ -60,21 +83,38 @@ async fn main() {
     });
 }
 
-async fn get_qq_avatar(qq_number: String) -> String {
+async fn get_qq_number(message: Message) -> String{
+    let mut qq_number= String::new();
+    for segment in message.iter() {
+        debug!("segment = {:?}", segment);
+        if segment.type_ == "at" {
+            if let Some(qq) = segment.data.get("qq").and_then(|v| v.as_str()) {
+                qq_number = qq.to_string();
+            }
+        }
+    }
+    if qq_number.is_empty() {
+        return String::new()
+    }
+    qq_number
+}
+
+async fn get_qq_avatar(qq_number: String) -> Image {
     let client = Client::new();
     let url = format!("https://q1.qlogo.cn/g?b=qq&nk={qq_number}&s=640");
     let image = client.get(url).send().await.unwrap().bytes().await.unwrap();
-    let path = format!("{}/avatar/{qq_number}.jpg", DATA_PATH.lock().await);
-    debug!("path = {path}");
-    let path = Path::new(path.as_str());
-    if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent).await.unwrap(); // ✔ 自动创建所有不存在的目录
-    }
-    write(path, image).expect("头像保存失败!");
-    path.to_str().unwrap().to_string()
+    Image {name: String::new(), data: image.to_vec()}
 }
 
-async fn handle_result(result: Result<Vec<u8>, Error>) -> String {
+async fn generate_image(key: &str, qq_number: String, options: HashMap<String, OptionValue>) -> String {
+    let meme = get_meme(key).expect(format!("表情 `{key}` 不存在").as_str());
+    let image = get_qq_avatar(qq_number).await;
+    let texts = vec![];
+    let result = meme.generate(vec![image], texts, options);
+    get_image_base64(result).await
+}
+
+async fn get_image_base64(result: Result<Vec<u8>, Error>) -> String {
     match result {
         Err(Error::ImageDecodeError(err)) => {
             error!("图片解码失败：{err}");
