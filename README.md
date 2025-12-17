@@ -1,5 +1,8 @@
 # Kovi-plugin-meme
 
+## 安装方式
+cargo kovi add kovi-plugin-meme
+
 ## 使用方式
 - 摸摸头@用户
 - 捶爆@用户 or 爆捶@用户

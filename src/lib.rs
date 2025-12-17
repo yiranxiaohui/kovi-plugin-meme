@@ -1,28 +1,27 @@
+mod data;
+mod meme;
+
 use meme_generator::error::Error;
 use meme_generator::meme::{Image, OptionValue};
 use meme_generator::get_meme;
 use std::collections::HashMap;
 use std::env;
-use std::fs::{read, write};
-use std::path::{Path, PathBuf};
-use std::sync::LazyLock;
 use base64::Engine;
 use base64::engine::general_purpose;
-use uuid::Uuid;
 use kovi::{Message, PluginBuilder as plugin, PluginBuilder};
-use kovi::log::{debug, error};
-use kovi::tokio::fs;
-use kovi::tokio::sync::Mutex;
+use kovi::log::{debug, error, info};
+use meme_generator::resources::{check_resources};
 use reqwest::Client;
-
-static DATA_PATH: LazyLock<Mutex<String>> = LazyLock::new(|| {Mutex::new(String::new()) });
+use crate::data::{get_data_path, set_data_path};
 
 #[kovi::plugin]
 async fn main() {
     let bot = PluginBuilder::get_runtime_bot();
-    *DATA_PATH.lock().await = bot.get_data_path().to_str().unwrap().to_string();
-    unsafe { env::set_var("MEME_HOME", DATA_PATH.lock().await.as_str()); }
-    debug!("{:?}", env::var("MEME_HOME"));
+    set_data_path(bot.get_data_path()).await;
+    let path = get_data_path();
+    unsafe { env::set_var("MEME_HOME", path); }
+    check_resources(None).await;
+    info!("Check kovi-plugin-meme resources successfully.");
     plugin::on_msg(move |event| {
         async move {
             let text = event.borrow_text().unwrap_or("");
