@@ -10,6 +10,7 @@ use base64::Engine;
 use base64::engine::general_purpose;
 use kovi::{Message, PluginBuilder as plugin, PluginBuilder};
 use kovi::log::{debug, error, info};
+use kovi_onebot::{EventRegistrar, MessageRegistrar};
 use meme_generator::resources::{check_resources};
 use reqwest::Client;
 use crate::data::{get_data_path, set_data_path};
@@ -86,7 +87,7 @@ async fn get_qq_number(message: Message) -> String{
     let mut qq_number= String::new();
     for segment in message.iter() {
         debug!("segment = {:?}", segment);
-        if segment.type_ == "at" {
+        if segment.kind == "at" {
             if let Some(qq) = segment.data.get("qq").and_then(|v| v.as_str()) {
                 qq_number = qq.to_string();
             }

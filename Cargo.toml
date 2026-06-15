@@ -11,7 +11,8 @@ repository = "https://github.com/yiranxiaohui/kovi-plugin-meme"
 documentation = "https://docs.rs/kovi-plugin-meme"
 
 [dependencies]
-kovi = ">=0.12.5"
+kovi = ">=0.13"
+kovi-onebot = ">=0.13"
 meme_generator = "0.2.2"
 reqwest = { version = "0.12.24", features = ["default", "json", "rustls-tls"] }
 base64 = "0.22.1"
